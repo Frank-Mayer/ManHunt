@@ -1,0 +1,11 @@
+name: Manhunt
+version: ${project.version}
+main: de.kuerbisskraft.manhunt.Manhunt
+api-version: 1.16
+authors: [ FrankMayer ]
+description: ManHunt Gamemode
+website: https://kuerbisskraft.de
+
+commands:
+  manhunt:
+    description: manhunt options
