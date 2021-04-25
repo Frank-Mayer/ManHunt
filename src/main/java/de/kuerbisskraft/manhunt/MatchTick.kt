@@ -1,5 +1,6 @@
 package de.kuerbisskraft.manhunt
 
+import com.sun.org.apache.xpath.internal.operations.Bool
 import org.bukkit.*
 import org.bukkit.entity.Player
 import org.bukkit.inventory.ItemStack
@@ -140,6 +141,10 @@ class MatchTick(private val logger: Logger, private val plugin: Plugin) {
         }
     }
 
+    fun isSpeedrunner(player: Player): Boolean {
+        return (getSpeedrunnerid() == Lib.getPlayerId(player))
+    }
+
     fun getSpeedrunnerid(): String {
         return if (speedrunnerId != null) {
             speedrunnerId!!
@@ -172,6 +177,19 @@ class MatchTick(private val logger: Logger, private val plugin: Plugin) {
             }
         } else {
             time = 0
+        }
+    }
+
+    fun playSoundForHunters(location: Location, sound: Sound) {
+        for (player in Bukkit.getOnlinePlayers()) {
+            if (!isSpeedrunner(player)) {
+                player.playSound(
+                    Lib.relativeToAbsolute(location, player.location,),
+                    sound,
+                    1.0f,
+                    1.0f
+                )
+            }
         }
     }
 }

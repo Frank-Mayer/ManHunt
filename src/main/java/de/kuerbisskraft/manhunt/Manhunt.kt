@@ -6,30 +6,26 @@ import org.bukkit.Material
 import org.bukkit.command.Command
 import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
+import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
+import org.bukkit.event.block.BlockBreakEvent
+import org.bukkit.event.block.BlockDamageEvent
+import org.bukkit.event.block.BlockPlaceEvent
+import org.bukkit.event.entity.EntityDamageByEntityEvent
 import org.bukkit.event.entity.PlayerDeathEvent
 import org.bukkit.event.player.PlayerAdvancementDoneEvent
 import org.bukkit.event.player.PlayerRespawnEvent
 import org.bukkit.inventory.ItemStack
-import org.bukkit.plugin.Plugin
 import org.bukkit.plugin.java.JavaPlugin
-import org.koin.core.component.KoinApiExtension
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
-import org.koin.core.context.startKoin
-import org.koin.dsl.module
 
-@KoinApiExtension
-class Manhunt : JavaPlugin(), Listener, CommandExecutor, KoinComponent {
+class Manhunt : JavaPlugin(), Listener, CommandExecutor {
     private lateinit var cmdInterpreter: CmdInterpreter
     private lateinit var matchTick: MatchTick
 
     override fun onEnable() {
-        registerModules()
-
-        cmdInterpreter = inject<CmdInterpreter>().value
-        matchTick = inject<MatchTick>().value
+        matchTick = MatchTick(Bukkit.getLogger(), this)
+        cmdInterpreter = CmdInterpreter(matchTick)
 
         Bukkit.getPluginManager().registerEvents(this, this)
     }
@@ -75,18 +71,46 @@ class Manhunt : JavaPlugin(), Listener, CommandExecutor, KoinComponent {
         }
     }
 
-    private fun registerModules() {
-        val plugin = this
-
-        val koinModules = module {
-            single<Plugin> { plugin }
-            single { Bukkit.getLogger() }
-            single { CmdInterpreter(get()) }
-            single { MatchTick(get(), get()) }
+    @EventHandler
+    fun onBlockBreak(event: BlockBreakEvent) {
+        if (matchTick.isSpeedrunner(event.player)) {
+            matchTick.playSoundForHunters(
+                Lib.absoluteToRelative(event.block.location, event.player.location),
+                event.block.soundGroup.placeSound
+            )
         }
+    }
 
-        startKoin {
-            modules(koinModules)
+    @EventHandler
+    fun onBlockDamage(event: BlockDamageEvent) {
+        if (matchTick.isSpeedrunner(event.player)) {
+            matchTick.playSoundForHunters(
+                Lib.absoluteToRelative(event.block.location, event.player.location),
+                event.block.soundGroup.hitSound
+            )
+        }
+    }
+
+    @EventHandler
+    fun onBlockPlace(event: BlockPlaceEvent) {
+        if (matchTick.isSpeedrunner(event.player)) {
+            matchTick.playSoundForHunters(
+                Lib.absoluteToRelative(event.block.location, event.player.location),
+                event.block.soundGroup.placeSound
+            )
+        }
+    }
+
+    @EventHandler
+    fun onEntityHitEntity(event: EntityDamageByEntityEvent) {
+        if (event.damager is Player && matchTick.isSpeedrunner(event.damager as Player)) {
+            val hurtSound = EntitySounds.getHurtSound(event.entityType)
+            if (hurtSound != null) {
+                matchTick.playSoundForHunters(
+                    Lib.absoluteToRelative(event.entity.location, event.damager.location),
+                    hurtSound
+                )
+            }
         }
     }
 }
